@@ -9,9 +9,10 @@
 //   AutoUnpack.exe               — значок в трее (меню: уведомления, открывать папку, автозапуск)
 //   AutoUnpack.exe /tray         — то же (так запускается вместе с Windows)
 //   AutoUnpack.exe архив         — распаковать и открыть папку на переднем плане
-//   Ctrl+Shift + двойной клик    — открыть архив стандартным просмотром Windows, без распаковки
+//   Shift + двойной клик         — открыть архив стандартным просмотром Windows, без распаковки
+//                                  (при «открывать одним щелчком» — выделить архив и Shift+Enter)
 //   AutoUnpack.exe /view архив   — то же (пункт контекстного меню «Просмотреть архив»)
-//   AutoUnpack.exe /extract архив — распаковать, Shift не учитывать (пункт «Распаковать в папку рядом»)
+//   AutoUnpack.exe /extract архив — распаковать, Shift не учитывать
 //   AutoUnpack.exe /stampicon    — служебный: установщик вшивает в exe системный значок архива
 //
 // Распаковку и открытие папки делает процесс, запущенный двойным кликом: у него есть право
@@ -72,8 +73,8 @@ static class AutoUnpack
     [STAThread]
     static int Main(string[] args)
     {
-        // Ctrl+Shift проверяются первым делом: пока .NET запускается, клавиши обычно уже отпускают
-        bool viewKeys = ViewKeysHeld();
+        // Shift проверяется первым делом: пока .NET запускается, клавишу обычно уже отпускают
+        bool viewKeys = ShiftHeld();
 
         List<string> files = new List<string>();
         bool forceExtract = false;    // пункт контекстного меню «Распаковать»: Shift не учитывать
@@ -98,7 +99,7 @@ static class AutoUnpack
             return 0;
         }
 
-        // Ctrl+Shift зажаты при открытии — не распаковываем, а открываем архив
+        // Shift зажат при открытии — не распаковываем, а открываем архив
         // стандартным просмотром Windows (как папку в Проводнике)
         // (в контекстное меню попадают и через Shift+ПКМ — там клавиши не означают «просмотр»)
         // Пункт «Просмотреть архив» работает при любом режиме Проводника — в том числе
@@ -172,15 +173,14 @@ static class AutoUnpack
     [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vk);
     [DllImport("user32.dll")] static extern short GetKeyState(int vk);
 
-    // Зажаты ли Ctrl+Shift. Две проверки:
-    // 1) физическое состояние клавиш сейчас;
+    // Зажат ли Shift. Две проверки:
+    // 1) физическое состояние клавиши сейчас;
     // 2) состояние клавиатуры в окне Проводника на момент последнего обработанного им
-    //    события — то есть примерно на момент щелчка, даже если клавиши уже отпустили.
-    static bool ViewKeysHeld()
+    //    события — то есть примерно на момент двойного клика или Enter, даже если Shift уже отпустили.
+    static bool ShiftHeld()
     {
-        const int VK_SHIFT = 0x10, VK_CONTROL = 0x11;
-        if ((GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0 && (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0)
-            return true;
+        const int VK_SHIFT = 0x10;
+        if ((GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0) return true;
         try
         {
             IntPtr fg = GetForegroundWindow();
@@ -188,7 +188,7 @@ static class AutoUnpack
             uint myThread = GetCurrentThreadId();
             if (fgThread != 0 && fgThread != myThread && AttachThreadInput(myThread, fgThread, true))
             {
-                try { return (GetKeyState(VK_SHIFT) & 0x8000) != 0 && (GetKeyState(VK_CONTROL) & 0x8000) != 0; }
+                try { return (GetKeyState(VK_SHIFT) & 0x8000) != 0; }
                 finally { AttachThreadInput(myThread, fgThread, false); }
             }
         }
