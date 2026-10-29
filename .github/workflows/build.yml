@@ -34,6 +34,7 @@ jobs:
           }
           "RELEASE=$release" >> $env:GITHUB_ENV
           Write-Host "Версия $v, новый релиз: $release"
+          exit 0   # «релиза нет» — ожидаемый ответ gh, а не ошибка шага
 
       - name: Install Inno Setup
         shell: pwsh
