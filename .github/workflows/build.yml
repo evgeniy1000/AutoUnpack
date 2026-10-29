@@ -10,29 +10,36 @@ on:
   pull_request:
   workflow_dispatch:
 
+# По умолчанию — только чтение. Право записи есть лишь у шага публикации релиза.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      release: ${{ steps.ver.outputs.release }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Determine version
+        id: ver
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = (Get-Content VERSION -Raw).Trim()
           if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Неверная версия в VERSION: $v" }
-          "VERSION=$v" >> $env:GITHUB_ENV
           $release = 'false'
           if ('${{ github.event_name }}' -ne 'pull_request' -and '${{ github.ref }}' -eq 'refs/heads/main') {
             gh release view "v$v" --repo '${{ github.repository }}' *> $null
             if ($LASTEXITCODE -ne 0) { $release = 'true' }
           }
-          "RELEASE=$release" >> $env:GITHUB_ENV
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "release=$release" >> $env:GITHUB_OUTPUT
           Write-Host "Версия $v, новый релиз: $release"
           exit 0   # «релиза нет» — ожидаемый ответ gh, а не ошибка шага
 
@@ -45,7 +52,7 @@ jobs:
 
       - name: Build
         shell: pwsh
-        run: ./build.ps1 -Version $env:VERSION -Url "https://github.com/${{ github.repository }}"
+        run: ./build.ps1 -Version ${{ steps.ver.outputs.version }} -Url "https://github.com/${{ github.repository }}"
 
       - name: Checksums
         shell: pwsh
@@ -57,16 +64,37 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: AutoUnpack-${{ env.VERSION }}
+          name: dist
           path: dist/*
 
-      - name: Publish release
-        if: env.RELEASE == 'true'
-        uses: softprops/action-gh-release@v2
+  release:
+    needs: build
+    if: needs.build.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # создать релиз
+      id-token: write        # подписать подтверждение происхождения сборки
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          tag_name: v${{ env.VERSION }}
+          name: dist
+          path: dist
+
+      # Подтверждение происхождения: любой может проверить, что установщик собран
+      # именно этим репозиторием в GitHub Actions:
+      #   gh attestation verify AutoUnpack-Setup-X.Y.Z.exe --repo <владелец>/AutoUnpack
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/AutoUnpack-Setup-*.exe
+            dist/AutoUnpack.exe
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
           target_commitish: ${{ github.sha }}
-          name: Распаковщик архивов ${{ env.VERSION }}
+          name: Распаковщик архивов ${{ needs.build.outputs.version }}
           files: |
             dist/AutoUnpack-Setup-*.exe
             dist/SHA256SUMS.txt

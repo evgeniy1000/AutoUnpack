@@ -71,10 +71,12 @@ static class AutoUnpack
     static int Main(string[] args)
     {
         List<string> files = new List<string>();
+        bool forceExtract = false;    // пункт контекстного меню: всегда распаковывать, Shift не учитывать
         foreach (string a in args)
         {
             if (string.Equals(a, "/stampicon", StringComparison.OrdinalIgnoreCase))
                 return SystemIcon.StampIntoSelf();
+            if (string.Equals(a, "/extract", StringComparison.OrdinalIgnoreCase)) { forceExtract = true; continue; }
             if (a.StartsWith("/")) continue;
             try { files.Add(Path.GetFullPath(a)); } catch { files.Add(a); }   // до смены рабочей папки
         }
@@ -91,7 +93,8 @@ static class AutoUnpack
 
         // Shift зажат при двойном клике — не распаковываем, а открываем архив
         // стандартным просмотром Windows (как папку в Проводнике)
-        if ((GetAsyncKeyState(0x10) & 0x8000) != 0)       // VK_SHIFT
+        // (в контекстное меню попадают через Shift+ПКМ — там Shift не означает «просмотр»)
+        if (!forceExtract && (GetAsyncKeyState(0x10) & 0x8000) != 0)       // VK_SHIFT
         {
             foreach (string f in files) OpenInExplorer(Path.GetFullPath(f));
             return 0;
@@ -102,6 +105,18 @@ static class AutoUnpack
         foreach (string f in files)
         {
             string full = Path.GetFullPath(f);
+
+            // Защита от двойной распаковки одного архива (например, случайный повторный двойной
+            // клик): пока архив распаковывается, второй запуск для него ничего не делает.
+            Mutex busy = null;
+            try
+            {
+                bool first;
+                busy = new Mutex(true, @"Local\AutoUnpack.Extract." + PathHash(full), out first);
+                if (!first) { busy.Dispose(); continue; }
+            }
+            catch { busy = null; }
+
             try
             {
                 string target = Unpack(full);
@@ -122,8 +137,25 @@ static class AutoUnpack
                     MessageBox.Show("Не удалось распаковать:\n" + f + "\n\n" + e.Message,
                         Title, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                if (busy != null)
+                {
+                    try { busy.ReleaseMutex(); } catch { }
+                    busy.Dispose();
+                }
+            }
         }
         return rc;
+    }
+
+    static string PathHash(string path)
+    {
+        using (System.Security.Cryptography.SHA256 sha = System.Security.Cryptography.SHA256.Create())
+        {
+            byte[] h = sha.ComputeHash(Encoding.UTF8.GetBytes(path.ToUpperInvariant()));
+            return BitConverter.ToString(h, 0, 16).Replace("-", "");
+        }
     }
 
     // ---------- Просмотр архива (Shift + двойной клик) ----------
@@ -444,11 +476,13 @@ static class AutoUnpack
 
         // 1) Основной способ — сам Проводник (тот же механизм, что «Извлечь всё»).
         //    На больших архивах Windows сама показывает стандартное окно копирования с прогрессом.
-        //    Проводник сам переносит пометку «скачано из интернета» на извлечённые файлы.
         try
         {
             if (ShellExtract.Run(archive, target))
             {
+                // Проводник переносит пометку «скачано из интернета» для .zip, но не во всех
+                // версиях Windows — для .rar/.7z. Дублируем сами: повторная запись безвредна.
+                ZoneMark.Propagate(archive, target);
                 Flatten(target, baseName);
                 return target;
             }
@@ -728,7 +762,16 @@ static class ZoneMark
     static void Walk(string dir, byte[] mark)
     {
         foreach (string f in Directory.GetFiles(dir))
-            try { Write(f, mark); } catch { }
+        {
+            try
+            {
+                // Символическая ссылка на файл: запись пометки «прошла бы» по ссылке
+                // и изменила файл за пределами папки — такие пропускаем
+                if ((File.GetAttributes(f) & FileAttributes.ReparsePoint) != 0) continue;
+                Write(f, mark);
+            }
+            catch { }
+        }
         foreach (string d in Directory.GetDirectories(dir))
         {
             // Не заходим в символические ссылки и точки соединения

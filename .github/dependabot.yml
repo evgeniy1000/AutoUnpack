@@ -1,0 +1,7 @@
+# Автоматические предложения обновить GitHub Actions, используемые при сборке
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
