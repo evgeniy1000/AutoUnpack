@@ -25,6 +25,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -110,7 +111,10 @@ static class AutoUnpack
             return 0;
         }
 
+        // Папку открываем, только если распаковывается один архив. При выборе нескольких
+        // Проводник запускает по копии программы на каждый — они договариваются через Batch.
         bool openFolder = GetSetting("OpenFolder", true);
+        if (openFolder) Batch.Register(UserSid);
         int rc = 0;
         foreach (string f in files)
         {
@@ -131,7 +135,7 @@ static class AutoUnpack
             {
                 string target = Unpack(full);
                 // Папка открывается только после полного завершения распаковки
-                if (openFolder) OpenFolder(target, true);
+                if (openFolder && files.Count == 1 && Batch.IsAlone()) OpenFolder(target, true);
                 NotifyTray("OK\t" + target);
             }
             catch (OperationCanceledException)
@@ -1246,5 +1250,84 @@ static class ShellExtract
             foreach (IntPtr c in children) Marshal.FreeCoTaskMem(c);
             if (pidlArchive != IntPtr.Zero) Marshal.FreeCoTaskMem(pidlArchive);
         }
+    }
+}
+
+// Определение «пачки»: несколько архивов, открытых одновременно. Проводник запускает
+// отдельную копию программы на каждый выбранный архив, почти одновременно. Каждая копия
+// отмечает время запуска в общей памяти (только для текущего пользователя в этом сеансе).
+// Копии, запущенные с интервалом меньше WindowMs друг от друга, считаются одной пачкой.
+static class Batch
+{
+    const int WindowMs = 800;
+    static MemoryMappedFile mmf;
+    static Mutex lockMutex;
+    static long myBatch;
+    static Thread decision;
+    static bool alone = true;
+
+    delegate void ViewAction(MemoryMappedViewAccessor v);
+
+    static void Locked(ViewAction action)
+    {
+        bool taken = false;
+        try
+        {
+            try { taken = lockMutex.WaitOne(2000); }
+            catch (AbandonedMutexException) { taken = true; }
+            using (MemoryMappedViewAccessor v = mmf.CreateViewAccessor(0, 32))
+                action(v);
+        }
+        finally
+        {
+            if (taken) try { lockMutex.ReleaseMutex(); } catch { }
+        }
+    }
+
+    public static void Register(string sid)
+    {
+        try
+        {
+            string name = @"Local\AutoUnpack.Batch." + sid;
+            mmf = MemoryMappedFile.CreateOrOpen(name, 32);
+            lockMutex = new Mutex(false, name + ".Lock");
+            long now = DateTime.UtcNow.Ticks;
+            long window = TimeSpan.FromMilliseconds(WindowMs).Ticks;
+
+            Locked(delegate (MemoryMappedViewAccessor v)
+            {
+                long last = v.ReadInt64(0), batch = v.ReadInt64(8);
+                int count = v.ReadInt32(16);
+                if (batch == 0 || now - last > window) { batch = now; count = 0; }   // новая пачка
+                count++;
+                v.Write(0, now); v.Write(8, batch); v.Write(16, count);
+                myBatch = batch;
+            });
+
+            // Решение принимаем, когда окно ожидания истекло — все копии пачки уже отметились.
+            // Делается в фоне, параллельно с распаковкой.
+            decision = new Thread(delegate ()
+            {
+                Thread.Sleep(WindowMs);
+                try
+                {
+                    Locked(delegate (MemoryMappedViewAccessor v)
+                    {
+                        if (v.ReadInt64(8) == myBatch && v.ReadInt32(16) > 1) alone = false;
+                    });
+                }
+                catch { }
+            });
+            decision.IsBackground = true;
+            decision.Start();
+        }
+        catch { mmf = null; }
+    }
+
+    // Один ли архив открыт. Если программа запущена недавно — дождаться решения.
+    public static bool IsAlone()
+    {
+        if (decision != null) decision.Join();
+        return alone;
     }
 }
