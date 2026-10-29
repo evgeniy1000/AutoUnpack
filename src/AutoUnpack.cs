@@ -222,6 +222,9 @@ static class AutoUnpack
         {
             if (!created) return;               // значок уже есть
             CleanupOldFiles();
+            // Непредвиденная ошибка не должна показывать пользователю отчёт о сбое .NET
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += delegate { };
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             new TrayApp();
@@ -450,6 +453,21 @@ static class AutoUnpack
         return Directory.GetFileSystemEntries(dir).Length == 0;
     }
 
+    static bool IsReparsePoint(string path)
+    {
+        try { return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0; }
+        catch { return false; }
+    }
+
+    // Имя занято: файл, непустая папка или ссылка/точка соединения. В ссылку не распаковываем
+    // никогда, даже в «пустую»: она может вести в чужую папку (например, «Автозагрузку»).
+    static bool IsOccupied(string path)
+    {
+        if (File.Exists(path)) return true;
+        if (!Directory.Exists(path)) return false;
+        return IsReparsePoint(path) || !IsEmptyDir(path);
+    }
+
     // Возвращает путь к папке, куда распакован архив
     public static string Unpack(string archive)
     {
@@ -464,13 +482,16 @@ static class AutoUnpack
         // не смешиваем файлы, а берём «Имя (2)», «Имя (3)» и т.д.
         string target = Path.Combine(dir, baseName);
         int n = 2;
-        while (File.Exists(target) || (Directory.Exists(target) && !IsEmptyDir(target)))
+        while (IsOccupied(target))
         {
             target = Path.Combine(dir, baseName + " (" + n + ")");
             n++;
         }
         bool created = !Directory.Exists(target);
         Directory.CreateDirectory(target);
+        // Повторная проверка: папку могли подменить ссылкой между проверкой и созданием
+        if (IsReparsePoint(target))
+            throw new IOException("Папка назначения оказалась символической ссылкой — распаковка отменена.");
 
         string err = "";
 
@@ -688,18 +709,31 @@ class TrayApp
     {
         ui.BeginInvoke((MethodInvoker)delegate
         {
-            // Ошибки показываются всегда, независимо от галочки «Уведомлять»
-            if (error != null)
+            // Данные пришли из канала — некорректная строка не должна ронять трей
+            try
             {
-                string msg = Path.GetFileName(archive) + "\n" + error;
-                if (msg.Length > 250) msg = msg.Substring(0, 250) + "…";
-                icon.ShowBalloonTip(8000, "Не удалось распаковать", msg, ToolTipIcon.Error);
-                return;
+                // Ошибки показываются всегда, независимо от галочки «Уведомлять»
+                if (error != null)
+                {
+                    string msg = SafeName(archive) + "\n" + error;
+                    if (msg.Length > 250) msg = msg.Substring(0, 250) + "…";
+                    icon.ShowBalloonTip(8000, "Не удалось распаковать", msg, ToolTipIcon.Error);
+                    return;
+                }
+                lastFolder = target;
+                if (miNotify.Checked)
+                    icon.ShowBalloonTip(3000, "Распаковано", SafeName(target), ToolTipIcon.Info);
             }
-            lastFolder = target;
-            if (miNotify.Checked)
-                icon.ShowBalloonTip(3000, "Распаковано", Path.GetFileName(target), ToolTipIcon.Info);
+            catch { }
         });
+    }
+
+    static string SafeName(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return "";
+        int i = path.TrimEnd('\\').LastIndexOf('\\');
+        string name = i >= 0 ? path.TrimEnd('\\').Substring(i + 1) : path;
+        return name.Length > 120 ? name.Substring(0, 120) + "…" : name;
     }
 }
 
