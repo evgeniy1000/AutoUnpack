@@ -37,7 +37,7 @@ using Microsoft.Win32.SafeHandles;
 
 static class AutoUnpack
 {
-    public const string Title = "Распаковщик";
+    public const string Title = "AutoUnpack";
     const string RegSettings = @"Software\AutoUnpack";
     const string RegRun = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string RunValue = "AutoUnpack";
@@ -402,27 +402,60 @@ static class AutoUnpack
         // Передаём Проводнику своё право выйти на передний план —
         // тогда новое окно сразу открывается поверх всех, а не сзади.
         AllowSetForegroundWindow(-1);   // ASFW_ANY
-        try
-        {
-            ProcessStartInfo psi = new ProcessStartInfo(ExplorerExe, Q(path));
-            psi.UseShellExecute = false;
-            Process.Start(psi);
-        }
-        catch { return; }
 
-        Thread t = new Thread(delegate () { ActivateWhenOpened(path); });
+        // Основной способ — попросить уже запущенный Проводник открыть папку (через оболочку).
+        // Так надёжнее, чем запуск explorer.exe: при одновременном открытии нескольких архивов
+        // часть запусков explorer.exe Проводник может «потерять».
+        bool viaShell = OpenViaShell(path);
+        if (!viaShell && !StartExplorer(path)) return;
+
+        Thread t = new Thread(delegate () { ActivateWhenOpened(path, viaShell); });
         t.SetApartmentState(ApartmentState.STA);   // Shell.Application требует STA
         t.IsBackground = !wait;
         t.Start();
         if (wait) t.Join();
     }
 
-    static void ActivateWhenOpened(string path)
+    static bool OpenViaShell(string path)
     {
         try
         {
-            for (int i = 0; i < 60; i++)                // до ~6 секунд
+            SHELLEXECUTEINFO sei = new SHELLEXECUTEINFO();
+            sei.cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO));
+            sei.fMask = 0x00000001 | 0x00000400;          // SEE_MASK_CLASSNAME | SEE_MASK_FLAG_NO_UI
+            sei.lpVerb = "open";
+            sei.lpFile = path;
+            sei.lpClass = "Folder";                        // стандартное открытие папки Проводником
+            sei.nShow = 1;                                 // SW_SHOWNORMAL
+            return ShellExecuteEx(ref sei);
+        }
+        catch { return false; }
+    }
+
+    static bool StartExplorer(string path)
+    {
+        try
+        {
+            ProcessStartInfo psi = new ProcessStartInfo(ExplorerExe, Q(path));
+            psi.UseShellExecute = false;
+            Process.Start(psi);
+            return true;
+        }
+        catch { return false; }
+    }
+
+    // canRetry — если окно так и не появилось, повторить открытие запуском explorer.exe
+    static void ActivateWhenOpened(string path, bool canRetry)
+    {
+        try
+        {
+            for (int i = 0; i < 80; i++)                // до ~8 секунд
             {
+                if (i == 40 && canRetry)                // 4 секунды окна нет — открыть ещё раз
+                {
+                    AllowSetForegroundWindow(-1);
+                    StartExplorer(path);
+                }
                 Thread.Sleep(100);
                 IntPtr h = FindExplorerWindow(path);
                 if (h != IntPtr.Zero)
@@ -661,7 +694,7 @@ class TrayApp
         ui = new Control();
         IntPtr forceHandle = ui.Handle;   // для передачи событий в поток интерфейса
 
-        ToolStripMenuItem header = new ToolStripMenuItem("Распаковщик архивов");
+        ToolStripMenuItem header = new ToolStripMenuItem("AutoUnpack");
         header.Enabled = false;
         header.Font = new Font(header.Font, FontStyle.Bold);
 
@@ -698,7 +731,7 @@ class TrayApp
 
         icon = new NotifyIcon();
         icon.Icon = SystemIcon.Small();
-        icon.Text = "Распаковщик архивов";
+        icon.Text = "AutoUnpack";
         icon.ContextMenuStrip = menu;
         icon.BalloonTipClicked += delegate { AutoUnpack.OpenFolder(lastFolder, false); };
         icon.Visible = true;
@@ -885,8 +918,6 @@ static class SystemIcon
     static extern bool UpdateResource(IntPtr h, IntPtr type, IntPtr name, ushort lang, byte[] data, uint size);
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool EndUpdateResource(IntPtr h, bool discard);
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern bool MoveFileEx(string from, string to, uint flags);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     static extern uint ExtractIconEx(string file, int index, IntPtr[] large, IntPtr[] small, uint count);
@@ -1023,8 +1054,10 @@ static class SystemIcon
             string old = exe + "." + Guid.NewGuid().ToString("N") + ".old";
             File.Move(exe, old);
             File.Move(tmp, exe);
-            try { File.Delete(old); }
-            catch { MoveFileEx(old, null, 4); }            // удалить при перезагрузке
+            // Старую копию сейчас удалить нельзя (это запущенный файл) — её удаляет установщик
+            // сразу после завершения этого процесса. Удаление «при перезагрузке» не планируем,
+            // иначе установщик попросит перезагрузить компьютер.
+            try { File.Delete(old); } catch { }
             return 0;
         }
         catch

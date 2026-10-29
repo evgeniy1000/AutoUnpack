@@ -26,8 +26,8 @@ $versionCs = Join-Path $obj 'Version.cs'
 @"
 using System.Reflection;
 [assembly: AssemblyTitle("AutoUnpack")]
-[assembly: AssemblyDescription("Распаковка архивов двойным кликом")]
-[assembly: AssemblyProduct("Распаковщик архивов (AutoUnpack)")]
+[assembly: AssemblyDescription("AutoUnpack")]
+[assembly: AssemblyProduct("AutoUnpack")]
 [assembly: AssemblyCopyright("MIT License")]
 [assembly: AssemblyVersion("$Version.0")]
 [assembly: AssemblyFileVersion("$Version.0")]

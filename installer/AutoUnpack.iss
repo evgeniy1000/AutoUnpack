@@ -1,4 +1,4 @@
-﻿; Установщик «Распаковщик архивов» (AutoUnpack) — Inno Setup 6.3+
+﻿; Установщик AutoUnpack — Inno Setup 6.3+
 ; Сборка: ISCC.exe /DMyVersion=1.0.0 installer\AutoUnpack.iss  (или build.ps1)
 
 #ifndef MyVersion
@@ -10,9 +10,9 @@
 
 [Setup]
 AppId={{66C07F43-3A45-45E8-AD49-56850063631C}
-AppName=Распаковщик архивов (AutoUnpack)
+AppName=AutoUnpack
 AppVersion={#MyVersion}
-AppVerName=Распаковщик архивов {#MyVersion}
+AppVerName=AutoUnpack {#MyVersion}
 AppPublisher=AutoUnpack
 AppPublisherURL={#MyUrl}
 AppSupportURL={#MyUrl}
@@ -34,9 +34,12 @@ ChangesAssociations=yes
 CloseApplications=no
 LicenseFile=..\LICENSE
 UninstallDisplayIcon={app}\AutoUnpack.exe
-UninstallDisplayName=Распаковщик архивов (AutoUnpack)
+UninstallDisplayName=AutoUnpack
 VersionInfoVersion={#MyVersion}
-VersionInfoDescription=Установщик «Распаковщик архивов»
+VersionInfoDescription=Установщик AutoUnpack
+VersionInfoProductName=AutoUnpack
+; Программы из [Run] не должны приводить к запросу перезагрузки
+RestartIfNeededByRun=no
 SetupLogging=yes
 
 [Languages]
@@ -48,20 +51,20 @@ ru.ViewArchive=Просмотреть архив
 en.ViewArchive=View archive
 ru.AutostartTask=Запускать вместе с Windows (значок в трее)
 en.AutostartTask=Start with Windows (tray icon)
-ru.LaunchTray=Запустить распаковщик
+ru.LaunchTray=Запустить AutoUnpack
 en.LaunchTray=Launch AutoUnpack
-ru.DefaultApps=Назначить распаковщиком архивов по умолчанию (откроются Параметры Windows)
-en.DefaultApps=Make it the default for archives (opens Windows Settings)
+ru.DefaultApps=Назначить AutoUnpack программой по умолчанию для архивов (откроются Параметры Windows)
+en.DefaultApps=Make AutoUnpack the default for archives (opens Windows Settings)
 ru.StampingIcon=Настройка значка...
 en.StampingIcon=Setting up the icon...
 ru.TypeName=Архив
 en.TypeName=Archive
-ru.AppTitle=Распаковщик архивов
+ru.AppTitle=AutoUnpack
 en.AppTitle=AutoUnpack
 ru.AppDescription=Распаковка архивов двойным кликом в папку рядом с архивом
 en.AppDescription=Double-click an archive to extract it into a folder next to it
-ru.FriendlyName=Распаковщик (в папку рядом)
-en.FriendlyName=AutoUnpack (extract here)
+ru.FriendlyName=AutoUnpack
+en.FriendlyName=AutoUnpack
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutostartTask}"
@@ -217,9 +220,6 @@ Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpa
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 
 [Run]
-; Вшить в AutoUnpack.exe системный значок архива (берётся из этой Windows, поэтому совпадает 1:1)
-Filename: "{app}\AutoUnpack.exe"; Parameters: "/stampicon"; StatusMsg: "{cm:StampingIcon}"; Flags: runhidden waituntilterminated
-Filename: "{sys}\ie4uinit.exe"; Parameters: "-show"; Flags: runhidden waituntilterminated skipifdoesntexist
 Filename: "{app}\AutoUnpack.exe"; Parameters: "/tray"; Description: "{cm:LaunchTray}"; Flags: postinstall nowait runasoriginaluser skipifsilent
 Filename: "ms-settings:defaultapps?registeredAppMachine=AutoUnpack"; Description: "{cm:DefaultApps}"; Flags: postinstall shellexec nowait runasoriginaluser skipifsilent
 
@@ -227,7 +227,8 @@ Filename: "ms-settings:defaultapps?registeredAppMachine=AutoUnpack"; Description
 Filename: "{sys}\taskkill.exe"; Parameters: "/f /im AutoUnpack.exe"; Flags: runhidden waituntilterminated; RunOnceId: "KillTray"
 
 [UninstallDelete]
-Type: files; Name: "{app}\AutoUnpack.exe.*"
+Type: files; Name: "{app}\AutoUnpack.exe.*.old"
+Type: files; Name: "{app}\AutoUnpack.exe.new"
 
 [Code]
 const
@@ -255,6 +256,37 @@ end;
 function HasHandler(Ext: String): Boolean;
 begin
   Result := HandlerClsid(Ext) <> '';
+end;
+
+// После установки: вшить в AutoUnpack.exe системный значок архива этой Windows,
+// сразу удалить старую копию exe (без отложенного удаления «при перезагрузке»)
+// и обновить кэш значков Проводника.
+procedure StampIcon;
+var
+  rc: Integer;
+  fr: TFindRec;
+  dir: String;
+begin
+  dir := ExpandConstant('{app}');
+  WizardForm.StatusLabel.Caption := CustomMessage('StampingIcon');
+  Exec(dir + '\AutoUnpack.exe', '/stampicon', dir, SW_HIDE, ewWaitUntilTerminated, rc);
+  if FindFirst(dir + '\AutoUnpack.exe.*', fr) then
+  try
+    repeat
+      // только временные копии: маска может совпасть и с самим AutoUnpack.exe
+      if (Pos('.old', Lowercase(fr.Name)) > 0) or (Pos('.new', Lowercase(fr.Name)) > 0) then
+        DeleteFile(dir + '\' + fr.Name);
+    until not FindNext(fr);
+  finally
+    FindClose(fr);
+  end;
+  Exec(ExpandConstant('{sys}\ie4uinit.exe'), '-show', '', SW_HIDE, ewWaitUntilTerminated, rc);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    StampIcon;
 end;
 
 procedure KillTray;
