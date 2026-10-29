@@ -10,6 +10,8 @@
 //   AutoUnpack.exe /tray         — то же (так запускается вместе с Windows)
 //   AutoUnpack.exe архив         — распаковать и открыть папку на переднем плане
 //   Shift + двойной клик         — открыть архив стандартным просмотром Windows, без распаковки
+//   AutoUnpack.exe /view архив   — то же (пункт контекстного меню «Просмотреть архив»)
+//   AutoUnpack.exe /extract архив — распаковать, Shift не учитывать (пункт «Распаковать в папку рядом»)
 //   AutoUnpack.exe /stampicon    — служебный: установщик вшивает в exe системный значок архива
 //
 // Распаковку и открытие папки делает процесс, запущенный двойным кликом: у него есть право
@@ -74,12 +76,14 @@ static class AutoUnpack
         bool shift = ShiftHeld();
 
         List<string> files = new List<string>();
-        bool forceExtract = false;    // пункт контекстного меню: всегда распаковывать, Shift не учитывать
+        bool forceExtract = false;    // пункт контекстного меню «Распаковать»: Shift не учитывать
+        bool forceView = false;       // пункт контекстного меню «Просмотреть архив»
         foreach (string a in args)
         {
             if (string.Equals(a, "/stampicon", StringComparison.OrdinalIgnoreCase))
                 return SystemIcon.StampIntoSelf();
             if (string.Equals(a, "/extract", StringComparison.OrdinalIgnoreCase)) { forceExtract = true; continue; }
+            if (string.Equals(a, "/view", StringComparison.OrdinalIgnoreCase)) { forceView = true; continue; }
             if (a.StartsWith("/")) continue;
             try { files.Add(Path.GetFullPath(a)); } catch { files.Add(a); }   // до смены рабочей папки
         }
@@ -97,7 +101,9 @@ static class AutoUnpack
         // Shift зажат при двойном клике — не распаковываем, а открываем архив
         // стандартным просмотром Windows (как папку в Проводнике)
         // (в контекстное меню попадают через Shift+ПКМ — там Shift не означает «просмотр»)
-        if (!forceExtract && shift)
+        // Пункт «Просмотреть архив» работает при любом режиме Проводника — в том числе
+        // при «открывать одним щелчком», где Shift+щелчок занят выделением файлов.
+        if (forceView || (!forceExtract && shift))
         {
             foreach (string f in files) OpenInExplorer(Path.GetFullPath(f));
             return 0;

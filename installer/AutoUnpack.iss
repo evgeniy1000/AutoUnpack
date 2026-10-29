@@ -46,6 +46,8 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 ru.ExtractHere=Распаковать в папку рядом
 en.ExtractHere=Extract to folder here
+ru.ViewArchive=Просмотреть архив
+en.ViewArchive=View archive
 ru.AutostartTask=Запускать вместе с Windows (значок в трее)
 en.AutostartTask=Start with Windows (tray icon)
 ru.LaunchTray=Запустить распаковщик
@@ -172,36 +174,69 @@ Root: HKCU; Subkey: "Software\AutoUnpack"; Flags: uninsdeletekey dontcreatekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 
 [Run]
 ; Вшить в AutoUnpack.exe системный значок архива (берётся из этой Windows, поэтому совпадает 1:1)
