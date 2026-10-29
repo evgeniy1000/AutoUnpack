@@ -84,7 +84,7 @@ jobs:
       # Подтверждение происхождения: любой может проверить, что установщик собран
       # именно этим репозиторием в GitHub Actions:
       #   gh attestation verify AutoUnpack-Setup-X.Y.Z.exe --repo <владелец>/AutoUnpack
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             dist/AutoUnpack-Setup-*.exe
