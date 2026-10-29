@@ -72,13 +72,85 @@ Source: "ReadMe.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\{cm:AppTitle}"; Filename: "{app}\AutoUnpack.exe"; Parameters: "/tray"; Comment: "{cm:AppDescription}"
+Name: "{autoprograms}\AutoUnpack"; Filename: "{app}\AutoUnpack.exe"; Parameters: "/tray"; Comment: "{cm:AppDescription}"
 
 [Registry]
-; Тип файла «Архив»: значок — ровно системный значок ZIP-папки, взятый из этой Windows
+; Типы файлов: отдельный для каждого формата, как у самой Windows.
+; Значок — ровно системный значок ZIP-папки этой Windows.
+; CLSID — системный обработчик формата: благодаря ему архив остаётся «папкой» для Проводника
+; (просмотр по Shift, навигация внутрь архива), даже когда программой по умолчанию выбран AutoUnpack.
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zip"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zip\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zip\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zip\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.zip}"; Check: HasHandler('.zip')
+Root: HKLM; Subkey: "Software\Classes\.zip\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.zip"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".zip"; ValueData: "AutoUnpack.zip"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.7z"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.7z\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.7z\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.7z\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.7z}"; Check: HasHandler('.7z')
+Root: HKLM; Subkey: "Software\Classes\.7z\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.7z"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".7z"; ValueData: "AutoUnpack.7z"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.rar"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.rar\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.rar\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.rar\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.rar}"; Check: HasHandler('.rar')
+Root: HKLM; Subkey: "Software\Classes\.rar\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.rar"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".rar"; ValueData: "AutoUnpack.rar"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tar"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tar\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tar\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tar\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.tar}"; Check: HasHandler('.tar')
+Root: HKLM; Subkey: "Software\Classes\.tar\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.tar"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tar"; ValueData: "AutoUnpack.tar"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tgz"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tgz\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tgz\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tgz\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.tgz}"; Check: HasHandler('.tgz')
+Root: HKLM; Subkey: "Software\Classes\.tgz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.tgz"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tgz"; ValueData: "AutoUnpack.tgz"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.gz"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.gz\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.gz\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.gz\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.gz}"; Check: HasHandler('.gz')
+Root: HKLM; Subkey: "Software\Classes\.gz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.gz"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".gz"; ValueData: "AutoUnpack.gz"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.bz2"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.bz2\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.bz2\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.bz2\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.bz2}"; Check: HasHandler('.bz2')
+Root: HKLM; Subkey: "Software\Classes\.bz2\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.bz2"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".bz2"; ValueData: "AutoUnpack.bz2"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tbz2"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tbz2\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tbz2\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.tbz2\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.tbz2}"; Check: HasHandler('.tbz2')
+Root: HKLM; Subkey: "Software\Classes\.tbz2\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.tbz2"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tbz2"; ValueData: "AutoUnpack.tbz2"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.xz"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.xz\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.xz\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.xz\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.xz}"; Check: HasHandler('.xz')
+Root: HKLM; Subkey: "Software\Classes\.xz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.xz"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".xz"; ValueData: "AutoUnpack.xz"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.txz"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.txz\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.txz\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.txz\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.txz}"; Check: HasHandler('.txz')
+Root: HKLM; Subkey: "Software\Classes\.txz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.txz"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".txz"; ValueData: "AutoUnpack.txz"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zst"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zst\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zst\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.zst\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.zst}"; Check: HasHandler('.zst')
+Root: HKLM; Subkey: "Software\Classes\.zst\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.zst"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".zst"; ValueData: "AutoUnpack.zst"
+; Прежний общий тип (версии 1.0.0–1.0.2): сохраняется, чтобы уже сделанный выбор
+; «по умолчанию» продолжал работать. В основном его выбирали для .zip.
 Root: HKLM; Subkey: "Software\Classes\AutoUnpack.Archive"; ValueType: string; ValueName: ""; ValueData: "{cm:TypeName}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\AutoUnpack.Archive\DefaultIcon"; ValueType: expandsz; ValueName: ""; ValueData: "{code:ArchiveIcon}"
 Root: HKLM; Subkey: "Software\Classes\AutoUnpack.Archive\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" ""%1"""
+Root: HKLM; Subkey: "Software\Classes\AutoUnpack.Archive\CLSID"; ValueType: string; ValueName: ""; ValueData: "{code:HandlerClsid|.zip}"; Check: HasHandler('.zip')
 
 ; Приложение — для списка «Открыть с помощью»
 Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "{cm:FriendlyName}"; Flags: uninsdeletekey
@@ -97,69 +169,36 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Root: HKCU; Subkey: "Software\AutoUnpack"; Flags: uninsdeletekey dontcreatekey
 
 ; Расширения: «Открыть с помощью», «Приложения по умолчанию», пункт контекстного меню
-Root: HKLM; Subkey: "Software\Classes\.zip\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".zip"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".zip"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.7z\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".7z"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".7z"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.rar\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".rar"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".rar"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.tar\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".tar"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tar"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.tgz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".tgz"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tgz"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.gz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".gz"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".gz"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.bz2\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".bz2"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".bz2"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.tbz2\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".tbz2"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".tbz2"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.xz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".xz"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".xz"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.txz\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".txz"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".txz"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
-Root: HKLM; Subkey: "Software\Classes\.zst\OpenWithProgids"; ValueType: string; ValueName: "AutoUnpack.Archive"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\SupportedTypes"; ValueType: string; ValueName: ".zst"; ValueData: ""
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities\FileAssociations"; ValueType: string; ValueName: ".zst"; ValueData: "AutoUnpack.Archive"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpack"; ValueType: string; ValueName: ""; ValueData: "{cm:ExtractHere}"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpack"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpack\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /extract ""%1"""
@@ -186,6 +225,23 @@ function ArchiveIcon(Param: String): String;
 begin
   if not RegQueryStringValue(HKLM, 'SOFTWARE\Classes\CompressedFolder\DefaultIcon', '', Result) or (Result = '') then
     Result := '%SystemRoot%\System32\imageres.dll,-174';
+end;
+
+// Системный обработчик формата (например, CompressedFolder для .zip) — только из HKLM
+function HandlerClsid(Ext: String): String;
+var
+  progId: String;
+begin
+  Result := '';
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\Classes\' + Ext, '', progId) then exit;
+  if (progId = '') or (Pos('autounpack', Lowercase(progId)) = 1) then exit;
+  if not RegQueryStringValue(HKLM, 'SOFTWARE\Classes\' + progId + '\CLSID', '', Result) then
+    Result := '';
+end;
+
+function HasHandler(Ext: String): Boolean;
+begin
+  Result := HandlerClsid(Ext) <> '';
 end;
 
 procedure KillTray;

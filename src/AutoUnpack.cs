@@ -70,6 +70,9 @@ static class AutoUnpack
     [STAThread]
     static int Main(string[] args)
     {
+        // Shift проверяется первым делом: пока .NET запускается, клавишу обычно уже отпускают
+        bool shift = ShiftHeld();
+
         List<string> files = new List<string>();
         bool forceExtract = false;    // пункт контекстного меню: всегда распаковывать, Shift не учитывать
         foreach (string a in args)
@@ -94,7 +97,7 @@ static class AutoUnpack
         // Shift зажат при двойном клике — не распаковываем, а открываем архив
         // стандартным просмотром Windows (как папку в Проводнике)
         // (в контекстное меню попадают через Shift+ПКМ — там Shift не означает «просмотр»)
-        if (!forceExtract && (GetAsyncKeyState(0x10) & 0x8000) != 0)       // VK_SHIFT
+        if (!forceExtract && shift)
         {
             foreach (string f in files) OpenInExplorer(Path.GetFullPath(f));
             return 0;
@@ -161,6 +164,30 @@ static class AutoUnpack
     // ---------- Просмотр архива (Shift + двойной клик) ----------
 
     [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vk);
+    [DllImport("user32.dll")] static extern short GetKeyState(int vk);
+
+    // Зажат ли Shift. Две проверки:
+    // 1) физическое состояние клавиши сейчас;
+    // 2) состояние клавиатуры в окне Проводника на момент последнего обработанного им
+    //    события — то есть примерно на момент двойного клика, даже если Shift уже отпустили.
+    static bool ShiftHeld()
+    {
+        const int VK_SHIFT = 0x10;
+        if ((GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0) return true;
+        try
+        {
+            IntPtr fg = GetForegroundWindow();
+            uint fgThread = GetWindowThreadProcessId(fg, IntPtr.Zero);
+            uint myThread = GetCurrentThreadId();
+            if (fgThread != 0 && fgThread != myThread && AttachThreadInput(myThread, fgThread, true))
+            {
+                try { return (GetKeyState(VK_SHIFT) & 0x8000) != 0; }
+                finally { AttachThreadInput(myThread, fgThread, false); }
+            }
+        }
+        catch { }
+        return false;
+    }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct SHELLEXECUTEINFO
@@ -194,13 +221,24 @@ static class AutoUnpack
         string progId = ShellExtract.SystemProgId(archive);
         if (progId != null)
         {
+            // Основной способ: открыть архив как папку новым окном Проводника.
+            // Работает, потому что у типа файла есть CLSID системного обработчика.
             SHELLEXECUTEINFO sei = new SHELLEXECUTEINFO();
+            sei.cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO));
+            sei.fMask = 0x00000400;                        // SEE_MASK_FLAG_NO_UI
+            sei.lpVerb = "explore";
+            sei.lpFile = archive;
+            sei.nShow = 1;                                 // SW_SHOWNORMAL
+            if (ShellExecuteEx(ref sei)) return;
+
+            // Запасной способ: «открыть» от имени системного типа файла
+            sei = new SHELLEXECUTEINFO();
             sei.cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO));
             sei.fMask = 0x00000001 | 0x00000400;          // SEE_MASK_CLASSNAME | SEE_MASK_FLAG_NO_UI
             sei.lpVerb = "open";
             sei.lpFile = archive;
             sei.lpClass = progId;
-            sei.nShow = 1;                                 // SW_SHOWNORMAL
+            sei.nShow = 1;
             if (ShellExecuteEx(ref sei)) return;
         }
         // Встроенного просмотра для этого формата в Windows нет — предлагаем выбрать программу
