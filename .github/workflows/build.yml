@@ -1,9 +1,12 @@
 name: Build
 
+# Каждый пуш в main собирает программу и установщик.
+# Если версии из файла VERSION ещё нет в Releases, релиз vX.Y.Z создаётся автоматически.
+# Чтобы выпустить новую версию, достаточно изменить VERSION.
+
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
 
@@ -18,9 +21,19 @@ jobs:
 
       - name: Determine version
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if ($env:GITHUB_REF -like 'refs/tags/v*') { $v = $env:GITHUB_REF_NAME.Substring(1) } else { $v = '0.0.0' }
+          $v = (Get-Content VERSION -Raw).Trim()
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Неверная версия в VERSION: $v" }
           "VERSION=$v" >> $env:GITHUB_ENV
+          $release = 'false'
+          if ('${{ github.event_name }}' -ne 'pull_request' -and '${{ github.ref }}' -eq 'refs/heads/main') {
+            gh release view "v$v" --repo '${{ github.repository }}' *> $null
+            if ($LASTEXITCODE -ne 0) { $release = 'true' }
+          }
+          "RELEASE=$release" >> $env:GITHUB_ENV
+          Write-Host "Версия $v, новый релиз: $release"
 
       - name: Install Inno Setup
         shell: pwsh
@@ -47,9 +60,12 @@ jobs:
           path: dist/*
 
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.RELEASE == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Распаковщик архивов ${{ env.VERSION }}
           files: |
             dist/AutoUnpack-Setup-*.exe
             dist/SHA256SUMS.txt
