@@ -13,14 +13,12 @@
 //                                  (при «открывать одним щелчком» — выделить архив и Shift+Enter)
 //   AutoUnpack.exe /view архив   — то же (пункт контекстного меню «Просмотреть архив»)
 //   AutoUnpack.exe /extract архив — распаковать, Shift не учитывать
-//   AutoUnpack.exe /stampicon    — служебный: установщик вшивает в exe системный значок архива
 //
 // Распаковку и открытие папки делает процесс, запущенный двойным кликом: у него есть право
 // вывести окно на передний план. Трей только показывает уведомления.
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -82,8 +80,6 @@ static class AutoUnpack
         bool forceView = false;       // пункт контекстного меню «Просмотреть архив»
         foreach (string a in args)
         {
-            if (string.Equals(a, "/stampicon", StringComparison.OrdinalIgnoreCase))
-                return SystemIcon.StampIntoSelf();
             if (string.Equals(a, "/extract", StringComparison.OrdinalIgnoreCase)) { forceExtract = true; continue; }
             if (string.Equals(a, "/view", StringComparison.OrdinalIgnoreCase)) { forceView = true; continue; }
             if (a.StartsWith("/")) continue;
@@ -270,7 +266,6 @@ static class AutoUnpack
         using (Mutex mtx = new Mutex(true, MutexName, out created))
         {
             if (!created) return;               // значок уже есть
-            CleanupOldFiles();
             // Непредвиденная ошибка не должна показывать пользователю отчёт о сбое .NET
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += delegate { };
@@ -281,17 +276,6 @@ static class AutoUnpack
         }
     }
 
-    // Убрать хвосты от вшивания значка при установке (если удаление не удалось сразу)
-    static void CleanupOldFiles()
-    {
-        try
-        {
-            string dir = Path.GetDirectoryName(Application.ExecutablePath);
-            foreach (string f in Directory.GetFiles(dir, "AutoUnpack.exe.*.old"))
-                try { File.Delete(f); } catch { }
-        }
-        catch { }
-    }
 
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool GetNamedPipeServerProcessId(IntPtr pipe, out uint pid);
@@ -392,7 +376,6 @@ static class AutoUnpack
     [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid);
     [DllImport("user32.dll")] static extern bool AttachThreadInput(uint a, uint b, bool attach);
-    [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
     [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
     [DllImport("user32.dll")] static extern bool AllowSetForegroundWindow(int pid);
 
@@ -502,19 +485,7 @@ static class AutoUnpack
     static void BringToFront(IntPtr h)
     {
         if (IsIconic(h)) ShowWindow(h, 9);              // SW_RESTORE
-        if (SetForegroundWindow(h) && GetForegroundWindow() == h) return;
-
-        // Windows не даёт фоновой программе перехватывать фокус — обходим штатными способами
-        uint fgThread = GetWindowThreadProcessId(GetForegroundWindow(), IntPtr.Zero);
-        uint myThread = GetCurrentThreadId();
-        AttachThreadInput(myThread, fgThread, true);
         BringWindowToTop(h);
-        SetForegroundWindow(h);
-        AttachThreadInput(myThread, fgThread, false);
-        if (GetForegroundWindow() == h) return;
-
-        keybd_event(0x12, 0, 0, UIntPtr.Zero);          // короткое нажатие Alt снимает блокировку
-        keybd_event(0x12, 0, 2, UIntPtr.Zero);
         SetForegroundWindow(h);
     }
 
@@ -903,31 +874,11 @@ static class ZoneMark
 
 // Системный значок архива (тот, которым Windows рисует ZIP-папки).
 // Берётся только из системной регистрации (HKLM) — её не может подменить обычный пользователь.
+// Сам exe не изменяется: программа никогда не переписывает собственный файл.
 static class SystemIcon
 {
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern IntPtr LoadLibraryEx(string path, IntPtr file, uint flags);
-    [DllImport("kernel32.dll")] static extern bool FreeLibrary(IntPtr h);
-    [DllImport("kernel32.dll")] static extern IntPtr FindResource(IntPtr h, IntPtr name, IntPtr type);
-    [DllImport("kernel32.dll")] static extern IntPtr LoadResource(IntPtr h, IntPtr res);
-    [DllImport("kernel32.dll")] static extern IntPtr LockResource(IntPtr data);
-    [DllImport("kernel32.dll")] static extern uint SizeofResource(IntPtr h, IntPtr res);
-    delegate bool EnumResNameProc(IntPtr h, IntPtr type, IntPtr name, IntPtr param);
-    [DllImport("kernel32.dll")]
-    static extern bool EnumResourceNames(IntPtr h, IntPtr type, EnumResNameProc cb, IntPtr param);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern IntPtr BeginUpdateResource(string file, bool deleteExisting);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool UpdateResource(IntPtr h, IntPtr type, IntPtr name, ushort lang, byte[] data, uint size);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool EndUpdateResource(IntPtr h, bool discard);
-
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     static extern uint ExtractIconEx(string file, int index, IntPtr[] large, IntPtr[] small, uint count);
-
-    static readonly IntPtr RT_ICON = (IntPtr)3;
-    static readonly IntPtr RT_GROUP_ICON = (IntPtr)14;
 
     public static string Reference()
     {
@@ -955,7 +906,7 @@ static class SystemIcon
         path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
     }
 
-    // Маленький значок для трея
+    // Маленький значок для трея — прямо из системной библиотеки Windows
     public static Icon Small()
     {
         try
@@ -968,107 +919,6 @@ static class SystemIcon
         }
         catch { }
         return Icon.ExtractAssociatedIcon(Application.ExecutablePath);
-    }
-
-    static byte[] Res(IntPtr h, IntPtr name, IntPtr type)
-    {
-        IntPtr r = FindResource(h, name, type);
-        if (r == IntPtr.Zero) return null;
-        uint size = SizeofResource(h, r);
-        IntPtr p = LockResource(LoadResource(h, r));
-        if (p == IntPtr.Zero || size == 0 || size > 16 * 1024 * 1024) return null;
-        byte[] b = new byte[size];
-        Marshal.Copy(p, b, 0, (int)size);
-        return b;
-    }
-
-    // Читает группу значков (все размеры) из системной DLL
-    static void Read(out byte[] group, out List<byte[]> images)
-    {
-        string path; int index;
-        Parse(Reference(), out path, out index);
-
-        IntPtr h = LoadLibraryEx(path, IntPtr.Zero, 0x2 | 0x20);   // только как ресурсы, без выполнения кода
-        if (h == IntPtr.Zero) throw new Win32Exception();
-        IntPtr nameMem = IntPtr.Zero;
-        try
-        {
-            IntPtr name;
-            if (index < 0) name = (IntPtr)(-index);                 // отрицательный — ID ресурса
-            else                                                   // положительный — порядковый номер
-            {
-                List<object> names = new List<object>();
-                EnumResourceNames(h, RT_GROUP_ICON, delegate (IntPtr hh, IntPtr t, IntPtr n, IntPtr pp)
-                {
-                    if (((long)n >> 16) == 0) names.Add((int)n); else names.Add(Marshal.PtrToStringUni(n));
-                    return true;
-                }, IntPtr.Zero);
-                if (index >= names.Count) throw new Exception("Значок не найден");
-                object nm = names[index];
-                if (nm is int) name = (IntPtr)(int)nm;
-                else { nameMem = Marshal.StringToHGlobalUni((string)nm); name = nameMem; }
-            }
-
-            group = Res(h, name, RT_GROUP_ICON);
-            if (group == null || group.Length < 6) throw new Exception("Значок не найден");
-            int count = BitConverter.ToUInt16(group, 4);
-            if (count == 0 || count > 64 || group.Length < 6 + count * 14) throw new Exception("Повреждённый значок");
-
-            images = new List<byte[]>();
-            for (int i = 0; i < count; i++)
-            {
-                int id = BitConverter.ToUInt16(group, 6 + i * 14 + 12);
-                byte[] img = Res(h, (IntPtr)id, RT_ICON);
-                if (img == null) throw new Exception("Повреждённый значок");
-                images.Add(img);
-            }
-        }
-        finally
-        {
-            if (nameMem != IntPtr.Zero) Marshal.FreeHGlobal(nameMem);
-            FreeLibrary(h);
-        }
-    }
-
-    // Вызывается установщиком (с правами администратора): вшивает системный значок в exe.
-    // Запущенный exe нельзя изменить, но можно переименовать — поэтому меняем копию и подменяем.
-    public static int StampIntoSelf()
-    {
-        string exe = Application.ExecutablePath;
-        string tmp = exe + ".new";
-        try
-        {
-            byte[] group; List<byte[]> images;
-            Read(out group, out images);
-
-            File.Copy(exe, tmp, true);
-            IntPtr h = BeginUpdateResource(tmp, false);
-            if (h == IntPtr.Zero) throw new Win32Exception();
-            bool ok = true;
-            for (int i = 0; i < images.Count; i++)
-            {
-                ok &= UpdateResource(h, RT_ICON, (IntPtr)(i + 1), 0, images[i], (uint)images[i].Length);
-                byte[] id = BitConverter.GetBytes((ushort)(i + 1));
-                group[6 + i * 14 + 12] = id[0];
-                group[6 + i * 14 + 13] = id[1];
-            }
-            ok &= UpdateResource(h, RT_GROUP_ICON, (IntPtr)1, 0, group, (uint)group.Length);
-            if (!EndUpdateResource(h, !ok) || !ok) throw new Exception("Не удалось записать значок");
-
-            string old = exe + "." + Guid.NewGuid().ToString("N") + ".old";
-            File.Move(exe, old);
-            File.Move(tmp, exe);
-            // Старую копию сейчас удалить нельзя (это запущенный файл) — её удаляет установщик
-            // сразу после завершения этого процесса. Удаление «при перезагрузке» не планируем,
-            // иначе установщик попросит перезагрузить компьютер.
-            try { File.Delete(old); } catch { }
-            return 0;
-        }
-        catch
-        {
-            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
-            return 1;                                       // программа работает и без значка
-        }
     }
 }
 

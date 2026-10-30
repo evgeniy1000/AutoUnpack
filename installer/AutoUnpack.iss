@@ -33,7 +33,7 @@ WizardStyle=modern
 ChangesAssociations=yes
 CloseApplications=no
 LicenseFile=..\LICENSE
-UninstallDisplayIcon={app}\AutoUnpack.exe
+UninstallDisplayIcon={code:ArchiveIconFile}
 UninstallDisplayName=AutoUnpack
 VersionInfoVersion={#MyVersion}
 VersionInfoDescription=Установщик AutoUnpack
@@ -55,8 +55,6 @@ ru.LaunchTray=Запустить AutoUnpack
 en.LaunchTray=Launch AutoUnpack
 ru.DefaultApps=Назначить AutoUnpack программой по умолчанию для архивов (откроются Параметры Windows)
 en.DefaultApps=Make AutoUnpack the default for archives (opens Windows Settings)
-ru.StampingIcon=Настройка значка...
-en.StampingIcon=Setting up the icon...
 ru.TypeName=Архив
 en.TypeName=Archive
 ru.AppTitle=AutoUnpack
@@ -74,8 +72,8 @@ Source: "..\dist\AutoUnpack.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ReadMe.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
-[Icons]
-Name: "{autoprograms}\AutoUnpack"; Filename: "{app}\AutoUnpack.exe"; Parameters: "/tray"; Comment: "{cm:AppDescription}"
+; Ярлык в «Пуске» создаётся в [Code] (CreateStartMenuShortcut): значок для него берётся
+; из системной библиотеки Windows, номер значка известен только во время установки.
 
 [Registry]
 ; Типы файлов: отдельный для каждого формата, как у самой Windows.
@@ -163,7 +161,7 @@ Root: HKLM; Subkey: "Software\Classes\Applications\AutoUnpack.exe\shell\open\com
 Root: HKLM; Subkey: "Software\AutoUnpack"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "{cm:AppTitle}"
 Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "{cm:AppDescription}"
-Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities"; ValueType: string; ValueName: "ApplicationIcon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\AutoUnpack\Capabilities"; ValueType: string; ValueName: "ApplicationIcon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "AutoUnpack"; ValueData: "Software\AutoUnpack\Capabilities"; Flags: uninsdeletevalue
 
 ; Автозапуск значка в трее (галочку потом можно менять в меню значка)
@@ -186,37 +184,37 @@ Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpa
 
 ; Расширения: пункт контекстного меню «Просмотреть архив»
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.7z\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.rar\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tar\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tgz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.gz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.bz2\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.tbz2\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.xz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.txz\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView"; ValueType: string; ValueName: ""; ValueData: "{cm:ViewArchive}"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\AutoUnpack.exe"",0"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView"; ValueType: string; ValueName: "Icon"; ValueData: "{code:ArchiveIconFile}"
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zst\shell\AutoUnpackView\command"; ValueType: string; ValueName: ""; ValueData: """{app}\AutoUnpack.exe"" /view ""%1"""
 
 [Run]
@@ -227,6 +225,8 @@ Filename: "ms-settings:defaultapps?registeredAppMachine=AutoUnpack"; Description
 Filename: "{sys}\taskkill.exe"; Parameters: "/f /im AutoUnpack.exe"; Flags: runhidden waituntilterminated; RunOnceId: "KillTray"
 
 [UninstallDelete]
+Type: files; Name: "{autoprograms}\AutoUnpack.lnk"
+; остатки вшивания значка из версий до 1.0.9
 Type: files; Name: "{app}\AutoUnpack.exe.*.old"
 Type: files; Name: "{app}\AutoUnpack.exe.new"
 
@@ -258,35 +258,67 @@ begin
   Result := HandlerClsid(Ext) <> '';
 end;
 
-// После установки: вшить в AutoUnpack.exe системный значок архива этой Windows,
-// сразу удалить старую копию exe (без отложенного удаления «при перезагрузке»)
-// и обновить кэш значков Проводника.
-procedure StampIcon;
+// Значок «путь,номер» с раскрытым %SystemRoot% — для ярлыка и записей реестра
+function ArchiveIconFile(Param: String): String;
+begin
+  Result := ArchiveIcon('');
+  StringChangeEx(Result, '%SystemRoot%', ExpandConstant('{win}'), True);
+  StringChangeEx(Result, '%windir%', ExpandConstant('{win}'), True);
+  StringChangeEx(Result, '"', '', True);
+end;
+
+// Ярлык «AutoUnpack» в меню «Пуск» со значком ZIP-папки из системной библиотеки Windows.
+// Сам AutoUnpack.exe не изменяется — у всех пользователей один и тот же файл
+// (антивирусы и SmartScreen оценивают его по одной контрольной сумме).
+procedure CreateStartMenuShortcut;
+var
+  ref, iconFile: String;
+  comma, iconIndex: Integer;
+begin
+  ref := ArchiveIconFile('');
+  iconFile := ref;
+  iconIndex := 0;
+  comma := Length(ref);
+  while (comma > 0) and (ref[comma] <> ',') do comma := comma - 1;
+  if comma > 0 then
+  begin
+    iconFile := Trim(Copy(ref, 1, comma - 1));
+    iconIndex := StrToIntDef(Trim(Copy(ref, comma + 1, Length(ref))), 0);
+  end;
+  try
+    CreateShellLink(ExpandConstant('{autoprograms}\AutoUnpack.lnk'), CustomMessage('AppDescription'),
+      ExpandConstant('{app}\AutoUnpack.exe'), '/tray', ExpandConstant('{app}'),
+      iconFile, iconIndex, SW_SHOWNORMAL);
+  except
+    Log('Не удалось создать ярлык: ' + GetExceptionMessage);
+  end;
+end;
+
+procedure AfterInstall;
 var
   rc: Integer;
   fr: TFindRec;
   dir: String;
 begin
   dir := ExpandConstant('{app}');
-  WizardForm.StatusLabel.Caption := CustomMessage('StampingIcon');
-  Exec(dir + '\AutoUnpack.exe', '/stampicon', dir, SW_HIDE, ewWaitUntilTerminated, rc);
+  // остатки вшивания значка из версий до 1.0.9
   if FindFirst(dir + '\AutoUnpack.exe.*', fr) then
   try
     repeat
-      // только временные копии: маска может совпасть и с самим AutoUnpack.exe
       if (Pos('.old', Lowercase(fr.Name)) > 0) or (Pos('.new', Lowercase(fr.Name)) > 0) then
         DeleteFile(dir + '\' + fr.Name);
     until not FindNext(fr);
   finally
     FindClose(fr);
   end;
+  CreateStartMenuShortcut;
   Exec(ExpandConstant('{sys}\ie4uinit.exe'), '-show', '', SW_HIDE, ewWaitUntilTerminated, rc);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
-    StampIcon;
+    AfterInstall;
 end;
 
 procedure KillTray;
