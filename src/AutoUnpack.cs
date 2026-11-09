@@ -131,6 +131,18 @@ static class AutoUnpack
             {
                 string target = Unpack(full);
                 // Папка открывается только после полного завершения распаковки
+                // Удаление архива — только после успешной распаковки и только в корзину
+                if (GetSetting("DeleteArchive", false))
+                {
+                    string why = RecycleBin.Move(full);
+                    if (why != null)
+                    {
+                        string w = why.Replace("\r", " ").Replace("\n", " ").Replace("\t", " ");
+                        if (!NotifyTray("WARN\t" + full + "\t" + w))
+                            MessageBox.Show("Архив распакован, но не удалён:\n" + full + "\n\n" + why,
+                                Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
                 if (openFolder && files.Count == 1 && Batch.IsAlone()) OpenFolder(target, true);
                 NotifyTray("OK\t" + target);
             }
@@ -661,7 +673,7 @@ class TrayApp
 {
     readonly NotifyIcon icon;
     readonly Control ui;
-    readonly ToolStripMenuItem miOpen, miNotify, miAutostart;
+    readonly ToolStripMenuItem miOpen, miNotify, miDelete, miAutostart;
     string lastFolder;
 
     public TrayApp()
@@ -683,6 +695,11 @@ class TrayApp
         miOpen.Checked = AutoUnpack.GetSetting("OpenFolder", true);
         miOpen.CheckedChanged += delegate { AutoUnpack.SetSetting("OpenFolder", miOpen.Checked); };
 
+        miDelete = new ToolStripMenuItem("Удалять архив после распаковки (в корзину)");
+        miDelete.CheckOnClick = true;
+        miDelete.Checked = AutoUnpack.GetSetting("DeleteArchive", false);
+        miDelete.CheckedChanged += delegate { AutoUnpack.SetSetting("DeleteArchive", miDelete.Checked); };
+
         miAutostart = new ToolStripMenuItem("Запускать вместе с Windows");
         miAutostart.CheckOnClick = true;
         miAutostart.Checked = AutoUnpack.IsAutostart();
@@ -699,10 +716,14 @@ class TrayApp
         ContextMenuStrip menu = new ContextMenuStrip();
         menu.Items.AddRange(new ToolStripItem[] {
             header, new ToolStripSeparator(),
-            miNotify, miOpen, miAutostart,
+            miNotify, miOpen, miDelete, miAutostart,
             new ToolStripSeparator(), miExit
         });
-        menu.Opening += delegate { miAutostart.Checked = AutoUnpack.IsAutostart(); };
+        menu.Opening += delegate
+        {
+            miAutostart.Checked = AutoUnpack.IsAutostart();
+            miDelete.Checked = AutoUnpack.GetSetting("DeleteArchive", false);
+        };
 
         icon = new NotifyIcon();
         icon.Icon = SystemIcon.Small();
@@ -745,6 +766,8 @@ class TrayApp
                                 Report(null, parts[1], null);
                             else if (parts.Length >= 3 && parts[0] == "ERR")
                                 Report(parts[1], null, parts[2]);
+                            else if (parts.Length >= 3 && parts[0] == "WARN")
+                                Warn(parts[1], parts[2]);
                         }
                     }
                 }
@@ -776,6 +799,21 @@ class TrayApp
                 lastFolder = target;
                 if (miNotify.Checked)
                     icon.ShowBalloonTip(3000, "Распаковано", SafeName(target), ToolTipIcon.Info);
+            }
+            catch { }
+        });
+    }
+
+    // Архив распакован, но удалить его не удалось — показывается всегда, как и ошибки
+    void Warn(string archive, string reason)
+    {
+        ui.BeginInvoke((MethodInvoker)delegate
+        {
+            try
+            {
+                string msg = SafeName(archive) + "\n" + reason;
+                if (msg.Length > 250) msg = msg.Substring(0, 250) + "…";
+                icon.ShowBalloonTip(8000, "Архив распакован, но не удалён", msg, ToolTipIcon.Warning);
             }
             catch { }
         });
@@ -1179,5 +1217,60 @@ static class Batch
     {
         if (decision != null) decision.Join();
         return alone;
+    }
+}
+
+// Перемещение архива в корзину Windows. Насовсем ничего не удаляется: на дисках без корзины
+// (сетевые папки, флешки, карты памяти) архив остаётся на месте.
+static class RecycleBin
+{
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct SHFILEOPSTRUCT
+    {
+        public IntPtr hwnd;
+        public uint wFunc;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pFrom;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pTo;
+        public ushort fFlags;
+        [MarshalAs(UnmanagedType.Bool)] public bool fAnyOperationsAborted;
+        public IntPtr hNameMappings;
+        [MarshalAs(UnmanagedType.LPWStr)] public string lpszProgressTitle;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    static extern int SHFileOperation(ref SHFILEOPSTRUCT op);
+
+    const uint FO_DELETE = 3;
+    const ushort FOF_SILENT = 0x0004, FOF_ALLOWUNDO = 0x0040, FOF_NOERRORUI = 0x0400;
+
+    // null — архив в корзине; иначе — причина, по которой он оставлен на месте
+    public static string Move(string archive)
+    {
+        try
+        {
+            if (!File.Exists(archive)) return null;
+            if (archive.StartsWith(@"\\")) return "Архив в сетевой папке — там нет корзины.";
+            DriveInfo drive = new DriveInfo(Path.GetPathRoot(archive));
+            if (drive.DriveType != DriveType.Fixed)
+                return "На этом диске нет корзины (сетевой или съёмный диск).";
+
+            SHFILEOPSTRUCT op = new SHFILEOPSTRUCT();
+            op.wFunc = FO_DELETE;
+            op.pFrom = archive + "\0\0";                   // список путей завершается двумя нулями
+            // FOF_NOCONFIRMATION не ставим намеренно: если архив не помещается в корзину,
+            // Windows с этим флагом молча удалила бы его насовсем. Без него она спросит
+            // пользователя. Обычное перемещение в корзину проходит без вопросов, если
+            // в Windows не включено подтверждение удаления.
+            op.fFlags = (ushort)(FOF_ALLOWUNDO | FOF_SILENT | FOF_NOERRORUI);
+            int rc = SHFileOperation(ref op);
+            if (op.fAnyOperationsAborted) return "Удаление отменено.";
+            if (rc != 0 || File.Exists(archive))
+                return "Не удалось переместить в корзину (файл занят или нет доступа).";
+            return null;
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
     }
 }
