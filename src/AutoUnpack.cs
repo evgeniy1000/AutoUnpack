@@ -109,7 +109,7 @@ static class AutoUnpack
 
         // Папку открываем, только если распаковывается один архив. При выборе нескольких
         // Проводник запускает по копии программы на каждый — они договариваются через Batch.
-        bool openFolder = GetSetting("OpenFolder", true);
+        bool openFolder = GetSetting("OpenFolder", false);
         if (openFolder) Batch.Register(UserSid);
         int rc = 0;
         foreach (string f in files)
@@ -132,7 +132,7 @@ static class AutoUnpack
                 string target = Unpack(full);
                 // Папка открывается только после полного завершения распаковки
                 // Удаление архива — только после успешной распаковки и только в корзину
-                if (GetSetting("DeleteArchive", false))
+                if (GetSetting("DeleteArchive", true))
                 {
                     string why = RecycleBin.Move(full);
                     if (why != null)
@@ -692,12 +692,12 @@ class TrayApp
 
         miOpen = new ToolStripMenuItem("Открывать папку после распаковки");
         miOpen.CheckOnClick = true;
-        miOpen.Checked = AutoUnpack.GetSetting("OpenFolder", true);
+        miOpen.Checked = AutoUnpack.GetSetting("OpenFolder", false);
         miOpen.CheckedChanged += delegate { AutoUnpack.SetSetting("OpenFolder", miOpen.Checked); };
 
         miDelete = new ToolStripMenuItem("Удалять архив после распаковки (в корзину)");
         miDelete.CheckOnClick = true;
-        miDelete.Checked = AutoUnpack.GetSetting("DeleteArchive", false);
+        miDelete.Checked = AutoUnpack.GetSetting("DeleteArchive", true);
         miDelete.CheckedChanged += delegate { AutoUnpack.SetSetting("DeleteArchive", miDelete.Checked); };
 
         miAutostart = new ToolStripMenuItem("Запускать вместе с Windows");
@@ -722,7 +722,7 @@ class TrayApp
         menu.Opening += delegate
         {
             miAutostart.Checked = AutoUnpack.IsAutostart();
-            miDelete.Checked = AutoUnpack.GetSetting("DeleteArchive", false);
+            miDelete.Checked = AutoUnpack.GetSetting("DeleteArchive", true);
         };
 
         icon = new NotifyIcon();

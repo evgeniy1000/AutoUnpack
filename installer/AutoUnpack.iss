@@ -31,6 +31,8 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 ChangesAssociations=yes
+; Галочки задач берутся из текущих настроек программы (см. InitializeWizard), а не из прошлой установки
+UsePreviousTasks=no
 CloseApplications=no
 LicenseFile=..\LICENSE
 UninstallDisplayIcon={code:ArchiveIconFile}
@@ -49,8 +51,16 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 ru.ViewArchive=Просмотреть архив
 en.ViewArchive=View archive
-ru.AutostartTask=Запускать вместе с Windows (значок в трее)
-en.AutostartTask=Start with Windows (tray icon)
+ru.SettingsGroup=Настройки (их можно менять и позже в меню значка в трее):
+en.SettingsGroup=Settings (can be changed later in the tray icon menu):
+ru.NotifyTask=Уведомлять о распаковке
+en.NotifyTask=Notify when extraction finishes
+ru.OpenFolderTask=Открывать папку после распаковки
+en.OpenFolderTask=Open the folder after extraction
+ru.DeleteArchiveTask=Удалять архив после распаковки (в корзину)
+en.DeleteArchiveTask=Delete the archive after extraction (to Recycle Bin)
+ru.AutostartTask=Запускать вместе с Windows
+en.AutostartTask=Start with Windows
 ru.LaunchTray=Запустить AutoUnpack
 en.LaunchTray=Launch AutoUnpack
 ru.DefaultApps=Назначить AutoUnpack программой по умолчанию для архивов (откроются Параметры Windows)
@@ -65,7 +75,11 @@ ru.FriendlyName=AutoUnpack
 en.FriendlyName=AutoUnpack
 
 [Tasks]
-Name: "autostart"; Description: "{cm:AutostartTask}"
+; Те же настройки, что в меню значка в трее, и те же значения по умолчанию
+Name: "notify"; Description: "{cm:NotifyTask}"; GroupDescription: "{cm:SettingsGroup}"; Flags: unchecked
+Name: "openfolder"; Description: "{cm:OpenFolderTask}"; GroupDescription: "{cm:SettingsGroup}"; Flags: unchecked
+Name: "deletearchive"; Description: "{cm:DeleteArchiveTask}"; GroupDescription: "{cm:SettingsGroup}"
+Name: "autostart"; Description: "{cm:AutostartTask}"; GroupDescription: "{cm:SettingsGroup}"
 
 [Files]
 Source: "..\dist\AutoUnpack.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -167,7 +181,15 @@ Root: HKLM; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueN
 ; Автозапуск значка в трее (галочку потом можно менять в меню значка)
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AutoUnpack"; ValueData: """{app}\AutoUnpack.exe"" /tray"; Flags: uninsdeletevalue; Tasks: autostart
 ; Настройки пользователя — удаляются вместе с программой
-Root: HKCU; Subkey: "Software\AutoUnpack"; Flags: uninsdeletekey dontcreatekey
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "AutoUnpack"; Flags: deletevalue; Tasks: not autostart
+; Настройки программы — те же, что меняются галочками в меню значка в трее
+Root: HKCU; Subkey: "Software\AutoUnpack"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\AutoUnpack"; ValueType: dword; ValueName: "Notify"; ValueData: 1; Tasks: notify
+Root: HKCU; Subkey: "Software\AutoUnpack"; ValueType: dword; ValueName: "Notify"; ValueData: 0; Tasks: not notify
+Root: HKCU; Subkey: "Software\AutoUnpack"; ValueType: dword; ValueName: "OpenFolder"; ValueData: 1; Tasks: openfolder
+Root: HKCU; Subkey: "Software\AutoUnpack"; ValueType: dword; ValueName: "OpenFolder"; ValueData: 0; Tasks: not openfolder
+Root: HKCU; Subkey: "Software\AutoUnpack"; ValueType: dword; ValueName: "DeleteArchive"; ValueData: 1; Tasks: deletearchive
+Root: HKCU; Subkey: "Software\AutoUnpack"; ValueType: dword; ValueName: "DeleteArchive"; ValueData: 0; Tasks: not deletearchive
 
 ; Пункт «Распаковать в папку рядом» из прежних версий больше не нужен — удалить его при установке
 Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\.zip\shell\AutoUnpack"; ValueType: none; Flags: deletekey
@@ -319,6 +341,50 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
     AfterInstall;
+end;
+
+// Галочки на странице задач: при обновлении — текущие настройки программы
+// (в том числе изменённые в меню трея), при первой установке — значения по умолчанию.
+procedure ApplySetting(Name, Task: String);
+var
+  v: Cardinal;
+begin
+  if RegQueryDWordValue(HKCU, 'Software\AutoUnpack', Name, v) then
+  begin
+    if v <> 0 then WizardSelectTasks(Task) else WizardSelectTasks('!' + Task);
+  end;
+end;
+
+var
+  SettingsApplied: Boolean;
+
+procedure ApplyCurrentSettings;
+var
+  s: String;
+begin
+  ApplySetting('Notify', 'notify');
+  ApplySetting('OpenFolder', 'openfolder');
+  ApplySetting('DeleteArchive', 'deletearchive');
+  // автозапуск: если программа уже стояла, смотрим, включён ли он сейчас
+  if RegKeyExists(HKCU, 'Software\AutoUnpack') or
+     RegValueExists(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'AutoUnpack') then
+  begin
+    if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'AutoUnpack', s) and
+       (Pos(Lowercase(ExpandConstant('{localappdata}')), Lowercase(s)) = 0) then
+      WizardSelectTasks('autostart')
+    else if RegKeyExists(HKCU, 'Software\AutoUnpack') then
+      WizardSelectTasks('!autostart');
+  end;
+end;
+
+// Применяется при первом показе страницы задач — когда список задач уже построен
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpSelectTasks) and not SettingsApplied then
+  begin
+    SettingsApplied := True;
+    ApplyCurrentSettings;
+  end;
 end;
 
 procedure KillTray;
