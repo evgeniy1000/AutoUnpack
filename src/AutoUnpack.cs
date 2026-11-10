@@ -130,12 +130,13 @@ static class AutoUnpack
             try
             {
                 string target = Unpack(full);
-                // Папка открывается только после полного завершения распаковки
+                ShellRefresh.Created(target);
                 // Удаление архива — только после успешной распаковки и только в корзину
                 if (GetSetting("DeleteArchive", true))
                 {
                     string why = RecycleBin.Move(full);
-                    if (why != null)
+                    if (why == null) ShellRefresh.Deleted(full);
+                    else
                     {
                         string w = why.Replace("\r", " ").Replace("\n", " ").Replace("\t", " ");
                         if (!NotifyTray("WARN\t" + full + "\t" + w))
@@ -143,16 +144,22 @@ static class AutoUnpack
                                 Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
+                // Обновить окна Проводника с папкой архива — иначе новая папка или удалённый
+                // архив могут не отобразиться, пока не нажать F5
+                ShellRefresh.Folder(Path.GetDirectoryName(full));
+                // Папка открывается только после полного завершения распаковки
                 if (openFolder && files.Count == 1 && Batch.IsAlone()) OpenFolder(target, true);
                 NotifyTray("OK\t" + target);
             }
             catch (OperationCanceledException)
             {
                 // Пользователь нажал «Отмена» в окне копирования — молча выходим
+                ShellRefresh.Folder(Path.GetDirectoryName(full));
             }
             catch (Exception e)
             {
                 rc = 1;
+                ShellRefresh.Folder(Path.GetDirectoryName(full));
                 string msg = e.Message.Replace("\r", " ").Replace("\n", " ").Replace("\t", " ");
                 // Ошибка — всегда: уведомлением из трея, а если трея нет — окном
                 if (!NotifyTray("ERR\t" + full + "\t" + msg))
@@ -1272,5 +1279,69 @@ static class RecycleBin
         {
             return e.Message;
         }
+    }
+}
+
+// Обновление Проводника после распаковки. Обычно Проводник сам замечает изменения,
+// но не всегда (особенно в сетевых папках и при быстрой смене событий) — и тогда
+// кажется, что папка не появилась или архив не удалился. Поэтому:
+// 1) сообщаем оболочке о каждом изменении (SHChangeNotify);
+// 2) обновляем открытые окна Проводника с этой папкой — как нажатие F5.
+static class ShellRefresh
+{
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    static extern void SHChangeNotify(int eventId, uint flags, string item1, IntPtr item2);
+
+    const int SHCNE_DELETE = 0x00000004, SHCNE_MKDIR = 0x00000008, SHCNE_UPDATEDIR = 0x00001000;
+    const uint SHCNF_PATHW = 0x0005, SHCNF_FLUSH = 0x1000;
+
+    static void Notify(int ev, string path)
+    {
+        try { SHChangeNotify(ev, SHCNF_PATHW | SHCNF_FLUSH, path, IntPtr.Zero); } catch { }
+    }
+
+    public static void Created(string folder) { Notify(SHCNE_MKDIR, folder); }
+    public static void Deleted(string file) { Notify(SHCNE_DELETE, file); }
+
+    public static void Folder(string dir)
+    {
+        if (string.IsNullOrEmpty(dir)) return;
+        Notify(SHCNE_UPDATEDIR, dir);
+
+        // Окна Проводника доступны через COM только из STA-потока
+        Thread t = new Thread(delegate () { RefreshWindows(dir); });
+        t.SetApartmentState(ApartmentState.STA);
+        t.IsBackground = true;
+        t.Start();
+        t.Join(3000);
+    }
+
+    static void RefreshWindows(string dir)
+    {
+        try
+        {
+            Type type = Type.GetTypeFromProgID("Shell.Application");
+            if (type == null) return;
+            dynamic shell = Activator.CreateInstance(type);
+            try
+            {
+                string want = dir.TrimEnd('\\');
+                foreach (dynamic w in shell.Windows())
+                {
+                    try
+                    {
+                        string p = w.Document.Folder.Self.Path;
+                        if (string.Equals(p.TrimEnd('\\'), want, StringComparison.OrdinalIgnoreCase))
+                            w.Refresh();
+                    }
+                    catch { }
+                }
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(shell);
+            }
+        }
+        catch { }
     }
 }
